@@ -9,19 +9,23 @@ import tickets.*;
 import users.User;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-public class TicketService {
+public final class TicketService {
     private final TicketDatabase ticketDatabase;
 
     public TicketService(final TicketDatabase ticketDatabase) {
         this.ticketDatabase = ticketDatabase;
     }
 
-    public Ticket createTicket(AppContext appContext) {
+    /**
+     *
+     * @param appContext
+     * @return ticket
+     */
+    public Ticket createTicket(final AppContext appContext) {
         ObjectMapper mapper = appContext.getMapper();
         ObjectNode node = mapper.createObjectNode();
         JsonNode input = appContext.getInput();
@@ -47,11 +51,13 @@ public class TicketService {
                 .reportedBy(reporter).status(TicketStatus.OPEN)
                 .createdAt(createdAt);
 
-        if (params.has("description"))
+        if (params.has("description")) {
             builder.description(params.get("description").asText());
+        }
 
-        if (params.get("reportedBy").asText().equals(""))
+        if (params.get("reportedBy").asText().equals("")) {
             builder.businessPriority(TicketPriority.LOW);
+        }
 
         switch (type) {
             case BUG -> {
@@ -61,8 +67,9 @@ public class TicketService {
             }
 
             case FEATURE_REQUEST -> {
-                ((FeatureRequestTicketBuilder) builder).businessValue(Impact.valueOf(params.get("businessValue")
-                        .asText())).customerDemand(Demand.valueOf(params.get("customerDemand").asText()));
+                ((FeatureRequestTicketBuilder) builder).businessValue(Impact.valueOf(params
+                        .get("businessValue").asText())).customerDemand(Demand.valueOf(params
+                        .get("customerDemand").asText()));
             }
 
             case UI_FEEDBACK -> {
@@ -77,19 +84,34 @@ public class TicketService {
         return ticket;
     }
 
-    public List<Ticket> getVisibleTicketsForUser(User user) {
+    /**
+     *
+     * @param user
+     * @return visible tickets to user
+     */
+    public List<Ticket> getVisibleTicketsForUser(final User user) {
         Map<Integer, Ticket> tickets = ticketDatabase.getTickets();
         List<Ticket> ticketList = user.getVisibleTickets(tickets);
 
         return sort(ticketList);
     }
 
-    private List<Ticket> sort(List<Ticket> ticketList) {
+    /**
+     *
+     * @param ticketList
+     * @return ticketList
+     */
+    private List<Ticket> sort(final List<Ticket> ticketList) {
         return ticketList.stream().sorted(
                 Comparator.comparing(Ticket::getCreatedAt).thenComparing(Ticket::getId)).toList();
     }
 
-    public Ticket getTicketById(int ticketId) {
+    /**
+     *
+     * @param ticketId
+     * @return ticket with that id
+     */
+    public Ticket getTicketById(final int ticketId) {
         return ticketDatabase.getTicket(ticketId);
     }
 }
