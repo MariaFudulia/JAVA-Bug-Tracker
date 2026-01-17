@@ -1,11 +1,24 @@
 package main;
 
+import commands.Command;
+import commands.CommandFactory;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import context.AppContext;
+import database.MilestoneDatabase;
+import database.TicketDatabase;
+import database.UserDatabase;
+import fileio.InputLoader;
+import fileio.UserLoader;
+import services.MilestoneService;
+import services.TicketService;
+import workflow.WorkflowPhase;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,10 +54,62 @@ public class App {
             however you can use some of the more advanced features of
             jackson library, available here: https://www.baeldung.com/jackson-annotations
         */
+        ObjectMapper mapper = new ObjectMapper();
+        InputLoader loader;
+        List<JsonNode> commands;
+        UserLoader userLoader;
+        UserDatabase userDatabase;
+
+        try {
+            loader = new InputLoader(inputPath);
+            commands = loader.getCommands();
+        } catch (IOException e) {
+            System.out.println("error reading input file: " + e.getMessage());
+            return;
+        }
+
+        try {
+            userLoader = new UserLoader(INPUT_USERS_FIELD);
+            userDatabase = userLoader.getUserDatabase();
+        } catch (IOException e) {
+            System.out.println("error reading users file: " + e.getMessage());
+            return;
+        }
+
+        TicketDatabase ticketDatabase = new TicketDatabase();
+        TicketService ticketService = new TicketService(ticketDatabase);
+
+        MilestoneDatabase milestoneDatabase = new MilestoneDatabase();
+        MilestoneService milestoneService = new MilestoneService(milestoneDatabase);
+
+        WorkflowPhase workflowPhase = new WorkflowPhase();
+        String firstTimestamp = commands.get(0).get("timestamp").asText();
+        LocalDate startDate = LocalDate.parse(firstTimestamp);
+
+        AppContext appContext = new AppContext(ticketDatabase, userDatabase,
+                workflowPhase, mapper, startDate, milestoneDatabase);
+
+        for (JsonNode input : commands) {
+            appContext.setInput(input);
+            appContext.applyAutomaticPhaseUpdates();
+            milestoneService.refreshMilestone(appContext, ticketService);
+            CommandFactory factory = new CommandFactory();
+            Command cmd = factory.createCommand(appContext, ticketService,
+                    milestoneService, milestoneDatabase);
+
+            if (cmd == null) {
+                continue;
+            }
+
+            ObjectNode node = cmd.execute();
+            if (node != null) {
+                outputs.add(node);
+            }
+        }
 
         // TODO 2: process commands.
 
-        // TODO 3: create objectnodes for output, add them to outputs list.
+        // TODO 3: create objectNodes for output, add them to outputs list.
 
         // DO NOT CHANGE THIS SECTION IN ANY WAY
         try {
