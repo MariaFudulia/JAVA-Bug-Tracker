@@ -8,10 +8,17 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UserFactory {
-    private UserFactory() {}
+public final class UserFactory {
+    private UserFactory() { }
 
-    public static User createUser(JsonNode node, ObjectMapper mapper)
+    /**
+     *
+     * @param node
+     * @param mapper
+     * @return
+     * @throws JsonProcessingException
+     */
+    public static User createUser(final JsonNode node, final ObjectMapper mapper)
             throws JsonProcessingException {
         String username = node.get("username").asText();
         String email = node.get("email").asText();
@@ -29,7 +36,7 @@ public class UserFactory {
         };
     }
 
-    private static List<String> parseSubordinates(JsonNode subordinatesNode) {
+    private static List<String> parseSubordinates(final JsonNode subordinatesNode) {
         List<String> subordinates = new ArrayList<>();
 
         if (subordinatesNode != null && subordinatesNode.isArray()) {

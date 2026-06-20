@@ -12,9 +12,9 @@ import tickets.Ticket;
 import users.User;
 
 public class CreateMilestoneCommand extends Command {
-    MilestoneService milestoneService;
-    AppContext context;
-    TicketService ticketService;
+    private MilestoneService milestoneService;
+    private AppContext context;
+    private TicketService ticketService;
 
     public CreateMilestoneCommand(final MilestoneService milestoneService,
                                   final AppContext context,
@@ -24,6 +24,10 @@ public class CreateMilestoneCommand extends Command {
         this.ticketService = ticketService;
     }
 
+    /**
+     *
+     * @return output
+     */
     @Override
     public ObjectNode execute() {
         JsonNode input = context.getInput();
@@ -47,13 +51,13 @@ public class CreateMilestoneCommand extends Command {
             node.put("command", input.get("command").asText());
             node.put("username", username);
             node.put("timestamp", input.get("timestamp").asText());
-            node.put("error", "The user does not have permission to execute this command: " +
-                    "required role MANAGER; user role " + user.getRole() + ".");
+            node.put("error", "The user does not have permission to execute this command: "
+                    + "required role MANAGER; user role " + user.getRole() + ".");
             return node;
         }
 
-        if (milestoneService.TicketsAlreadyAssigned(context, ticketService) != -1) {
-            int id = milestoneService.TicketsAlreadyAssigned(context, ticketService);
+        if (milestoneService.ticketsAlreadyAssigned(context, ticketService) != -1) {
+            int id = milestoneService.ticketsAlreadyAssigned(context, ticketService);
             Ticket ticket = ticketService.getTicketById(id);
             ObjectNode node = new ObjectMapper().createObjectNode();
             node.put("command", input.get("command").asText());
@@ -70,6 +74,10 @@ public class CreateMilestoneCommand extends Command {
         milestoneService.blockOtherMilestones(context);
         milestoneService.assignDevsToMilestone(context);
         milestoneService.appointManagerToMilestone(context);
+
+        String msg = "New milestone " + milestone.getName()
+                + " has been created with due date " + milestone.getDueDate() + ".";
+        milestone.notifyObservers(msg);
         return null;
     }
 

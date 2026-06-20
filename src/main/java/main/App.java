@@ -12,8 +12,7 @@ import database.TicketDatabase;
 import database.UserDatabase;
 import fileio.InputLoader;
 import fileio.UserLoader;
-import services.MilestoneService;
-import services.TicketService;
+import services.*;
 import workflow.WorkflowPhase;
 
 import java.io.File;
@@ -89,13 +88,21 @@ public class App {
         AppContext appContext = new AppContext(ticketDatabase, userDatabase,
                 workflowPhase, mapper, startDate, milestoneDatabase);
 
+        PerformanceService performanceService = new PerformanceService();
+        CustomerImpactService customerImpactService = new CustomerImpactService();
+        TicketRiskService ticketRiskService = new TicketRiskService();
+        ResolutionEfficiencyService resolutionEfficiencyService = new ResolutionEfficiencyService();
+        AppStabilityService appStabilityService = new AppStabilityService(ticketRiskService, customerImpactService);
+
         for (JsonNode input : commands) {
             appContext.setInput(input);
             appContext.applyAutomaticPhaseUpdates();
             milestoneService.refreshMilestone(appContext, ticketService);
             CommandFactory factory = new CommandFactory();
-            Command cmd = factory.createCommand(appContext, ticketService,
-                    milestoneService, milestoneDatabase);
+            Command cmd = factory.createCommand(appContext, ticketService, ticketDatabase,
+                    milestoneService, milestoneDatabase, performanceService,
+                    customerImpactService, ticketRiskService, resolutionEfficiencyService,
+                    appStabilityService);
 
             if (cmd == null) {
                 continue;

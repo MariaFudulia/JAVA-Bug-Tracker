@@ -2,13 +2,10 @@ package context;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import database.MilestoneDatabase;
 import database.TicketDatabase;
 import database.UserDatabase;
-import users.User;
 import workflow.DevelopmentPhase;
-import workflow.Workflow;
 import workflow.WorkflowPhase;
 
 import java.time.LocalDate;
@@ -21,7 +18,8 @@ public class AppContext {
     private WorkflowPhase workflowPhase;
     private MilestoneDatabase milestoneDatabase;
     private ObjectMapper mapper;
-    LocalDate startedTesting;
+    private LocalDate startedTesting;
+    private final int TWELVE = 12;
 
     public AppContext(final TicketDatabase ticketDatabase,
                       final UserDatabase userDatabase,
@@ -36,50 +34,93 @@ public class AppContext {
         this.milestoneDatabase = milestoneDatabase;
     }
 
+    /**
+     *
+     * @return input
+     */
     public JsonNode getInput() {
         return input;
     }
 
+    /**
+     *
+     * @return mapper
+     */
     public ObjectMapper getMapper() {
         return mapper;
     }
 
+    /**
+     *
+     * @return ticket db
+     */
     public TicketDatabase getTicketDatabase() {
         return ticketDatabase;
     }
 
+    /**
+     *
+     * @return user db
+     */
     public UserDatabase getUserDatabase() {
         return userDatabase;
     }
 
+    /**
+     *
+     * @return phase
+     */
     public WorkflowPhase getWorkflowPhase() {
         return workflowPhase;
     }
 
+    /**
+     *
+     * @return milestone db
+     */
     public MilestoneDatabase getMilestoneDatabase() {
         return milestoneDatabase;
     }
 
+    /**
+     *
+     * @return when app started
+     */
     public LocalDate getStartedTesting() {
         return startedTesting;
     }
 
-    public void setInput(JsonNode input) {
+    /**
+     *
+     * @param input
+     */
+    public void setInput(final JsonNode input) {
         this.input = input;
     }
 
-    public void updateWorkflowPhase(WorkflowPhase workflowPhase) {
-        this.workflowPhase = workflowPhase;
+    /**
+     *
+     * @param phase
+     */
+    public void updateWorkflowPhase(final WorkflowPhase phase) {
+        this.workflowPhase = phase;
     }
 
+    /**
+     *
+     * @return true if app is in testing phase
+     */
     public boolean isInTesting() {
         return workflowPhase.getCurrentPhase().canReportTicket();
     }
 
+    /**
+     * updates phase
+     */
     public void applyAutomaticPhaseUpdates() {
         if (isInTesting()) {
             LocalDate now = LocalDate.parse(input.get("timestamp").asText());
-            if ((int) ChronoUnit.DAYS.between(startedTesting, now) >= 12) {
+            if ((int) ChronoUnit.DAYS.between(startedTesting, now) >= TWELVE) {
                 workflowPhase.setCurrentPhase(new DevelopmentPhase());
             }
         }

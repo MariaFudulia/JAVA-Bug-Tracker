@@ -8,7 +8,6 @@ import database.MilestoneDatabase;
 import milestones.Milestone;
 import services.MilestoneService;
 import services.TicketService;
-import tickets.Ticket;
 import users.User;
 
 import java.util.Comparator;
@@ -16,10 +15,10 @@ import java.util.List;
 import java.util.Map;
 
 public class ViewMilestonesCommand extends Command {
-    MilestoneService milestoneService;
-    MilestoneDatabase milestoneDatabase;
-    AppContext context;
-    TicketService ticketService;
+    private MilestoneService milestoneService;
+    private MilestoneDatabase milestoneDatabase;
+    private AppContext context;
+    private TicketService ticketService;
 
     public ViewMilestonesCommand(final MilestoneService milestoneService,
                                  final AppContext context,
@@ -31,6 +30,10 @@ public class ViewMilestonesCommand extends Command {
         this.milestoneDatabase = milestoneDatabase;
     }
 
+    /**
+     *
+     * @return output
+     */
     @Override
     public ObjectNode execute() {
         ObjectMapper mapper = context.getMapper();
@@ -41,8 +44,10 @@ public class ViewMilestonesCommand extends Command {
         node.put("timestamp", context.getInput().get("timestamp").asText());
 
         User user = context.getUserDatabase().getUser(context.getInput().get("username").asText());
-        List<Milestone> visibleMilestones = user.getVisibleMilestones(context.getMilestoneDatabase().getMilestones());
-        visibleMilestones = milestoneDatabase.getMilestonesSortedByDueDateAndName(visibleMilestones);
+        List<Milestone> visibleMilestones = user.getVisibleMilestones(context
+                .getMilestoneDatabase().getMilestones());
+        visibleMilestones = milestoneDatabase
+                .getMilestonesSortedByDueDateAndName(visibleMilestones);
 
         ArrayNode milestonesArray = mapper.createArrayNode();
 
@@ -71,13 +76,14 @@ public class ViewMilestonesCommand extends Command {
 
             ArrayNode repartitionNode = mapper.createArrayNode();
             Map<String, List<Integer>> repartition = milestone.getRepartition();
-            repartition.entrySet().stream().sorted(Comparator.<Map.Entry<String, List<Integer>>>comparingInt(
-                    e -> e.getValue().size()
-            ).thenComparing(Map.Entry::getKey)).forEach(entry -> {ObjectNode rep = mapper.createObjectNode();
+            repartition.entrySet().stream().sorted(Comparator.<Map.Entry<String,
+                    List<Integer>>>comparingInt(e -> e.getValue().size()
+            ).thenComparing(Map.Entry::getKey)).forEach(entry -> {
+                ObjectNode rep = mapper.createObjectNode();
                 rep.put("developer", entry.getKey());
                 rep.set("assignedTickets",
                         mapper.valueToTree(entry.getValue()));
-                repartitionNode.add(rep);});
+                repartitionNode.add(rep); });
 
             milestoneNode.set("repartition", repartitionNode);
             milestonesArray.add(milestoneNode);

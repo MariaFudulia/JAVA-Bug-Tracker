@@ -7,10 +7,18 @@ public class WorkflowPhase {
         this.currentPhase = new TestingPhase(this);
     }
 
-    public void setCurrentPhase(Workflow currentPhase) {
+    /**
+     *
+     * @param currentPhase
+     */
+    public void setCurrentPhase(final Workflow currentPhase) {
         this.currentPhase = currentPhase;
     }
 
+    /**
+     *
+     * @return current phase
+     */
     public Workflow getCurrentPhase() {
         return currentPhase;
     }

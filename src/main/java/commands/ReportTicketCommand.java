@@ -6,9 +6,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import context.AppContext;
 import database.UserDatabase;
 import services.TicketService;
-import tickets.*;
 import workflow.DevelopmentPhase;
 import workflow.WorkflowPhase;
+import tickets.Ticket;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -16,12 +16,18 @@ import java.time.temporal.ChronoUnit;
 public class ReportTicketCommand extends Command {
     private TicketService ticketService;
     private AppContext context;
+    static final int TWELVE = 12;
 
-    public ReportTicketCommand(TicketService ticketService, AppContext context) {
+    public ReportTicketCommand(final TicketService ticketService,
+                               final AppContext context) {
         this.ticketService = ticketService;
         this.context = context;
     }
 
+    /**
+     *
+     * @return output
+     */
     @Override
     public ObjectNode execute() {
         ObjectMapper mapper = context.getMapper();
@@ -33,7 +39,7 @@ public class ReportTicketCommand extends Command {
         LocalDate now = LocalDate.parse(timestamp);
         LocalDate startTestingDate = context.getStartedTesting();
 
-        if ((int) ChronoUnit.DAYS.between(startTestingDate, now) >= 12) {
+        if ((int) ChronoUnit.DAYS.between(startTestingDate, now) >= TWELVE) {
             workflowPhase.setCurrentPhase(new DevelopmentPhase());
         }
 
@@ -41,8 +47,8 @@ public class ReportTicketCommand extends Command {
             node.put("command", "reportTicket");
             node.put("username", input.get("username").asText());
             node.put("timestamp", input.get("timestamp").asText());
-            node.put("error", "Tickets can only be reported during " +
-                    "testing phases.");
+            node.put("error", "Tickets can only be reported during "
+                    + "testing phases.");
             return node;
         }
 
@@ -62,8 +68,8 @@ public class ReportTicketCommand extends Command {
             node.put("command", "reportTicket");
             node.put("username", input.get("username").asText());
             node.put("timestamp", input.get("timestamp").asText());
-            node.put("error", "Anonymous reports are only allowed for " +
-                    "tickets of type BUG.");
+            node.put("error", "Anonymous reports are only allowed for "
+                    + "tickets of type BUG.");
             return node;
         }
 

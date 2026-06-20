@@ -8,11 +8,9 @@ import users.UserFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class UserLoader {
-    UserDatabase userDatabase;
+    private UserDatabase userDatabase;
 
     public UserLoader(final String filePath) throws IOException {
         userDatabase = new UserDatabase();
@@ -26,6 +24,10 @@ public class UserLoader {
         }
     }
 
+    /**
+     *
+     * @return user db
+     */
     public UserDatabase getUserDatabase() {
         return userDatabase;
     }

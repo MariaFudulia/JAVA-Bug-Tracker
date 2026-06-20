@@ -15,11 +15,16 @@ public class ViewTicketsCommand extends Command {
     private final TicketService ticketService;
     private AppContext context;
 
-    public ViewTicketsCommand(TicketService ticketService, AppContext context) {
+    public ViewTicketsCommand(final TicketService ticketService,
+                              final AppContext context) {
         this.ticketService = ticketService;
         this.context = context;
     }
 
+    /**
+     *
+     * @return output
+     */
     @Override
     public ObjectNode execute() {
         ObjectMapper mapper = context.getMapper();
@@ -27,7 +32,7 @@ public class ViewTicketsCommand extends Command {
         JsonNode input = context.getInput();
 
         User user = context.getUserDatabase().getUser(input.get("username").asText());
-        List<Ticket> tickets = ticketService.getVisibleTicketsForUser(user);
+        List<Ticket> tickets = ticketService.getVisibleTicketsForUser(user, context);
 
         node.put("command", "viewTickets");
         node.put("username", input.get("username").asText());

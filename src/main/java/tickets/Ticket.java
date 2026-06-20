@@ -1,45 +1,60 @@
 package tickets;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import comments.Comment;
+import database.MilestoneDatabase;
+import milestones.Milestone;
+import users.Developer;
 import users.User;
+import users.UserRole;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
+/**
+ * Represents a Ticket in the system.
+ * This class is designed to be a base for specific ticket types.
+ */
 public class Ticket {
-    int id;
-    TicketType type;
-    String title;
-    LocalDate createdAt;
-    TicketPriority businessPriority;
-    TicketStatus status;
-    Expertise expertiseArea;
+    private int id;
+    private TicketType type;
+    private String title;
+    private LocalDate createdAt;
+    private TicketPriority businessPriority;
+    private TicketStatus status;
+    private Expertise expertiseArea;
 
-    LocalDate assignedAt;
-    LocalDate solvedAt;
-    String assignedTo;
+    private LocalDate assignedAt;
+    private LocalDate solvedAt;
+    private String assignedTo;
 
-    String description;
-    String reportedBy;
-    String expectedBehavior;
-    String actualBehavior;
-    BugFrequency frequency;
-    BugSeverity severity;
-    String environment;
-    int errorCode;
-    Impact businessValue;
-    Demand customerDemand;
-    String uiElementId;
-    int usabilityScore;
-    String screenshotUrl;
-    String suggestedFix;
+    private String description;
+    private String reportedBy;
+    private String expectedBehavior;
+    private String actualBehavior;
+    private BugFrequency frequency;
+    private BugSeverity severity;
+    private String environment;
+    private int errorCode;
+    private Impact businessValue;
+    private Demand customerDemand;
+    private String uiElementId;
+    private int usabilityScore;
+    private String screenshotUrl;
+    private String suggestedFix;
 
     private boolean assignedToAMilestone = false;
     private String belongsToMilestone = null;
 
-    private List<String> comments = new ArrayList<>();
+    private List<Comment> comments = new ArrayList<>();
+    private List<TicketAction> actions = new ArrayList<>();
+    private TicketStatus previousStatus;
 
     Ticket(final TicketBuilder builder) {
         this.id = builder.id;
@@ -65,40 +80,121 @@ public class Ticket {
         this.createdAt = builder.createdAt;
     }
 
-    public TicketPriority getBusinessPriority() {
+    /** @return current business priority */
+    public final TicketPriority getBusinessPriority() {
         return businessPriority;
     }
 
-    public TicketType getType() {
+    public final BugFrequency getBugFrequency() {
+        return frequency;
+    }
+
+    public final BugSeverity getSeverity() {
+        return severity;
+    }
+
+    public final Impact getBusinessValue() {
+        return businessValue;
+    }
+
+    public final int getUsabilityScore() {
+        return usabilityScore;
+    }
+
+    /**
+     *
+     * @param solvedAt
+     */
+    public void setSolvedAt(final LocalDate solvedAt) {
+        this.solvedAt = solvedAt;
+    }
+
+    /**
+     * Updates status to the next logical step.
+     */
+    public final void nextStatus(final LocalDate now) {
+        switch (this.status) {
+            case OPEN -> {
+                previousStatus = TicketStatus.OPEN;
+                status = TicketStatus.IN_PROGRESS;
+            }
+            case IN_PROGRESS -> {
+                previousStatus = TicketStatus.IN_PROGRESS;
+                status = TicketStatus.RESOLVED;
+                if (solvedAt == null) {
+                    setSolvedAt(now);
+                }
+            }
+            case RESOLVED -> {
+                previousStatus = TicketStatus.RESOLVED;
+                status = TicketStatus.CLOSED;
+            }
+            default -> { }
+        }
+    }
+
+    /**
+     * Reverts to previous status.
+     */
+    public final void undoStatus() {
+        if (previousStatus != null) {
+            TicketStatus tmpStatus = status;
+            status = previousStatus;
+            previousStatus = tmpStatus;
+        }
+    }
+
+    /** @return customer demand */
+    public final Demand getCustomerDemand() {
+        return customerDemand;
+    }
+
+    /** @return ticket type */
+    public final TicketType getType() {
         return type;
     }
-    public String getTitle() {
+
+    /** @return ticket title */
+    public final String getTitle() {
         return title;
     }
 
-    public Expertise getExpertiseArea() {
+    /** @return expertise area */
+    public final Expertise getExpertiseArea() {
         return expertiseArea;
     }
 
-    public int getId() {
+    /** @return ticket ID */
+    public final int getId() {
         return id;
     }
 
-    public TicketStatus getStatus() {
+    /** @return current status */
+    public final TicketStatus getStatus() {
         return status;
     }
 
-    public String getReportedBy() {
+    /** @return author of report */
+    public final String getReportedBy() {
         return reportedBy;
     }
 
-    public LocalDate getCreatedAt() {
+    /** @return creation date */
+    public final LocalDate getCreatedAt() {
         return createdAt;
     }
 
-    public ObjectNode ticketToJson(ObjectMapper mapper) {
-        ObjectNode node = mapper.createObjectNode();
+    /** @param status the status to set */
+    public final void setStatus(final TicketStatus status) {
+        this.status = status;
+    }
 
+    /**
+     * @param mapper Jackson mapper
+     * @return ObjectNode for JSON output
+     */
+    public final ObjectNode ticketToJson(final ObjectMapper mapper) {
+        ObjectNode node = mapper.createObjectNode();
         node.put("id", id);
         node.put("type", type.name());
         node.put("title", title);
@@ -109,52 +205,220 @@ public class Ticket {
         node.put("assignedAt", assignedAt != null ? assignedAt.toString() : "");
         node.put("assignedTo", assignedTo != null ? assignedTo : "");
         node.put("reportedBy", reportedBy);
-
-        node.set("comments", mapper.valueToTree(comments));
-
+        ArrayNode commentsNode = mapper.createArrayNode();
+        for (Comment comment : comments) {
+            commentsNode.add(comment.toJson(mapper));
+        }
+        node.set("comments", commentsNode);
         return node;
     }
 
-    public void setBusinessPriority(TicketPriority businessPriority) {
+    /**
+     * @param mapper Jackson mapper
+     * @return output node for assigned tickets
+     */
+    public final ObjectNode ticketToJsonForAssigned(final ObjectMapper mapper) {
+        ObjectNode node = mapper.createObjectNode();
+        node.put("id", id);
+        node.put("type", type.name());
+        node.put("title", title);
+        node.put("businessPriority", businessPriority.name());
+        node.put("status", status.name());
+        node.put("createdAt", createdAt.toString());
+        node.put("assignedAt", assignedAt != null ? assignedAt.toString() : "");
+        node.put("reportedBy", reportedBy);
+        ArrayNode commentsNode = mapper.createArrayNode();
+        for (Comment comment : comments) {
+            commentsNode.add(comment.toJson(mapper));
+        }
+        node.set("comments", commentsNode);
+        return node;
+    }
+
+    /**
+     * Converts ticket history to JSON.
+     * @param mapper Jackson mapper
+     * @param user user requesting history
+     * @return JSON node
+     */
+    public final ObjectNode ticketToJsonForHistory(final ObjectMapper mapper, final User user) {
+        ObjectNode node = mapper.createObjectNode();
+        node.put("id", id);
+        node.put("title", title);
+        node.put("status", status.name());
+
+        ArrayNode actionsNode = mapper.createArrayNode();
+        for (TicketAction action : filterActions(user)) {
+            actionsNode.add(action.toJson());
+        }
+        node.set("actions", actionsNode);
+
+        ArrayNode commentsNode = mapper.createArrayNode();
+        for (Comment comment : comments) {
+            commentsNode.add(comment.toJson(mapper));
+        }
+        node.set("comments", commentsNode);
+        return node;
+    }
+
+    /**
+     * Filters actions based on user seniority.
+     * @param user user to filter for
+     * @return filtered list
+     */
+    public final List<TicketAction> filterActions(final User user) {
+        if (!user.getRole().equals(UserRole.DEVELOPER)) {
+            return actions;
+        }
+
+        Developer dev = (Developer) user;
+        Optional<TicketAction> deAssign = actions.stream()
+                .filter(a -> a.getAction() == TicketActionType.DEASSIGNED
+                        && dev.getUsername().equals(a.getBy())).findFirst();
+
+        if (deAssign.isEmpty()) {
+            return actions;
+        }
+
+        LocalDate past = deAssign.get().getTimestamp();
+        return actions.stream().filter(a -> !a.getTimestamp().isAfter(past))
+                .collect(Collectors.toList());
+    }
+
+    /** @param comment comment to add */
+    public final void addComment(final Comment comment) {
+        comments.add(comment);
+    }
+
+    /** @param username author of comment */
+    public final void removeLastCommentAddedBy(final String username) {
+        for (int i = comments.size() - 1; i >= 0; i--) {
+            if (comments.get(i).getAuthor().equals(username)) {
+                comments.remove(i);
+                return;
+            }
+        }
+    }
+
+    /** @return list of comments */
+    public final List<Comment> getComments() {
+        return comments;
+    }
+
+    /** @param businessPriority new priority */
+    public final void setBusinessPriority(final TicketPriority businessPriority) {
         this.businessPriority = businessPriority;
     }
 
-    public void setIsAssignedToAMilestone(boolean assignedToAMilestone) {
-        this.assignedToAMilestone = assignedToAMilestone;
+    /** @param assignedToMilestone flag */
+    public final void setIsAssignedToAMilestone(final boolean assignedToMilestone) {
+        this.assignedToAMilestone = assignedToMilestone;
     }
 
-    public boolean isAssignedToAMilestone() {
+    /** @return assignment status */
+    public final boolean isAssignedToAMilestone() {
         return assignedToAMilestone;
     }
 
-    public void setAssignedTo(String assignedTo) {
+    /** @param assignedTo developer username */
+    public final void setAssignedTo(final String assignedTo) {
         this.assignedTo = assignedTo;
     }
 
-    public String getAssignedTo() {
+    /** @return assigned developer */
+    public final String getAssignedTo() {
         return assignedTo;
     }
 
-    public void setBelongsToMilestone(String belongsToMilestone) {
+    /** @return assignment date */
+    public final LocalDate getAssignedAt() {
+        return assignedAt;
+    }
+
+    /** @param assignedAt assignment date */
+    public final void setAssignedAt(final LocalDate assignedAt) {
+        this.assignedAt = assignedAt;
+    }
+
+    /** @param belongsToMilestone milestone name */
+    public final void setBelongsToMilestone(final String belongsToMilestone) {
         this.belongsToMilestone = belongsToMilestone;
     }
-    public String getBelongsToMilestone() {
+
+    /** @return milestone name */
+    public final String getBelongsToMilestone() {
         return belongsToMilestone;
     }
 
-    public void updatePriority() {
+    /**
+     * Increases priority by one level.
+     */
+    public final void updatePriority() {
         switch (businessPriority) {
             case LOW -> businessPriority = TicketPriority.MEDIUM;
             case MEDIUM -> businessPriority = TicketPriority.HIGH;
             case HIGH -> businessPriority = TicketPriority.CRITICAL;
             case CRITICAL -> businessPriority = TicketPriority.CRITICAL;
+            default -> { }
         }
     }
 
-    public void increasePriorityBy(int steps) {
+    /**
+     * Increases priority by multiple levels.
+     * @param steps number of levels
+     */
+    public final void increasePriorityBy(final int steps) {
         for (int i = 1; i <= steps; i++) {
             updatePriority();
         }
     }
 
+    /**
+     * Finds the milestone this ticket belongs to.
+     * @param db milestone database
+     * @return Milestone object or null
+     */
+    public final Milestone getMilestoneTicketIsAssignedTo(final MilestoneDatabase db) {
+        Map<String, Milestone> milestones = db.getMilestones();
+        for (Milestone m : milestones.values()) {
+            if (m.getTickets().contains(id)) {
+                return m;
+            }
+        }
+        return null;
+    }
+
+    /** @return list of actions */
+    public final List<TicketAction> getActions() {
+        return actions;
+    }
+
+    /** @return previous status */
+    public final TicketStatus getPreviousStatus() {
+        return previousStatus;
+    }
+
+    /** @return ticket description */
+    public final String getDescription() {
+        return description;
+    }
+
+    /** @return solved date */
+    public final LocalDate getSolvedAt() {
+        return solvedAt;
+    }
+
+    /**
+     * Gets assignment date for a specific developer.
+     * @param developerUsername developer name
+     * @return assignment date
+     */
+    public final LocalDate getAssignedAtToDev(final String developerUsername) {
+        return actions.stream()
+                .filter(a -> a.getAction().equals(TicketActionType.ASSIGNED)
+                        && a.getBy().equals(developerUsername))
+                .map(TicketAction::getTimestamp)
+                .findFirst()
+                .orElse(null);
+    }
 }

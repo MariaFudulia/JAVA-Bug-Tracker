@@ -5,7 +5,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import context.AppContext;
 import database.TicketDatabase;
-import tickets.*;
+
+import tickets.Ticket;
+import tickets.TicketBuilder;
+import tickets.TicketBuilderFactory;
+import tickets.TicketType;
+import tickets.TicketPriority;
+import tickets.Expertise;
+import tickets.TicketStatus;
+import tickets.BugTicketBuilder;
+import tickets.BugFrequency;
+import tickets.BugSeverity;
+import tickets.FeatureRequestTicketBuilder;
+import tickets.Impact;
+import tickets.Demand;
+import tickets.UiFeedbackTicketBuilder;
 import users.User;
 
 import java.time.LocalDate;
@@ -73,7 +87,8 @@ public final class TicketService {
             }
 
             case UI_FEEDBACK -> {
-                ((UiFeedbackTicketBuilder) builder).uiElementId(params.get("uiElementId").asText())
+                ((UiFeedbackTicketBuilder) builder).businessValue(Impact.valueOf(params
+                                .get("businessValue").asText()))
                         .usabilityScore(params.get("usabilityScore").asInt());
             }
         }
@@ -89,9 +104,11 @@ public final class TicketService {
      * @param user
      * @return visible tickets to user
      */
-    public List<Ticket> getVisibleTicketsForUser(final User user) {
+    public List<Ticket> getVisibleTicketsForUser(final User user,
+                                                 final AppContext appContext) {
         Map<Integer, Ticket> tickets = ticketDatabase.getTickets();
-        List<Ticket> ticketList = user.getVisibleTickets(tickets);
+        List<Ticket> ticketList = user.getVisibleTickets(tickets,
+                appContext.getMilestoneDatabase(), this);
 
         return sort(ticketList);
     }

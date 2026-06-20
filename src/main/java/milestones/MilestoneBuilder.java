@@ -14,41 +14,80 @@ public class MilestoneBuilder {
     private LocalDate createdAt;
     private LocalDate dueDate;
 
-    public MilestoneBuilder name(final String name) {
-        this.name = name;
+    /**
+     *
+     * @param nameB
+     * @return this
+     */
+    public MilestoneBuilder nameB(final String nameB) {
+        this.name = nameB;
         return this;
     }
 
-    public MilestoneBuilder tickets(final List<Integer> tickets) {
-        this.tickets = tickets;
+    /**
+     *
+     * @param ticketsB
+     * @return this
+     */
+    public MilestoneBuilder ticketsB(final List<Integer> ticketsB) {
+        this.tickets = ticketsB;
         return this;
     }
 
-    public MilestoneBuilder assignedDevs(final List<String> assignedDevs) {
-        this.assignedDevs = assignedDevs;
+    /**
+     *
+     * @param assignedDevsB
+     * @return this
+     */
+    public MilestoneBuilder assignedDevsB(final List<String> assignedDevsB) {
+        this.assignedDevs = assignedDevsB;
         return this;
     }
 
-    public MilestoneBuilder dueDate(final LocalDate dueDate) {
-        this.dueDate = dueDate;
+    /**
+     *
+     * @param dueDateB
+     * @return this
+     */
+    public MilestoneBuilder dueDateB(final LocalDate dueDateB) {
+        this.dueDate = dueDateB;
         return this;
     }
 
-    public MilestoneBuilder createdBy(final String createdBy) {
-        this.createdBy = createdBy;
+    /**
+     *
+     * @param createdByB
+     * @return this
+     */
+    public MilestoneBuilder createdByB(final String createdByB) {
+        this.createdBy = createdByB;
         return this;
     }
 
-    public MilestoneBuilder createdAt(final LocalDate createdAt) {
-        this.createdAt = createdAt;
+    /**
+     *
+     * @param createdAtB
+     * @return this
+     */
+    public MilestoneBuilder createdAtB(final LocalDate createdAtB) {
+        this.createdAt = createdAtB;
         return this;
     }
 
-    public MilestoneBuilder blockingFor(final List<String> blockingFor) {
-        this.blockingFor = blockingFor;
+    /**
+     *
+     * @param blockingForB
+     * @return this
+     */
+    public MilestoneBuilder blockingForB(final List<String> blockingForB) {
+        this.blockingFor = blockingForB;
         return this;
     }
 
+    /**
+     *
+     * @return new milestone
+     */
     public Milestone build() {
         return new Milestone(name, createdAt, dueDate, createdBy, tickets,
                 assignedDevs, blockingFor);

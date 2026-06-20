@@ -1,8 +1,13 @@
 package tickets;
 
-public class TicketBuilderFactory {
-    private TicketBuilderFactory() {}
+public final class TicketBuilderFactory {
+    private TicketBuilderFactory() { }
 
+    /**
+     *
+     * @param ticketType
+     * @return builder
+     */
     public static TicketBuilder create(final TicketType ticketType) {
         return switch (ticketType) {
             case BUG -> new BugTicketBuilder();

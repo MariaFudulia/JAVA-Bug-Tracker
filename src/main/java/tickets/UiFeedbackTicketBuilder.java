@@ -5,13 +5,33 @@ public class UiFeedbackTicketBuilder extends TicketBuilder {
         this.type = TicketType.UI_FEEDBACK;
     }
 
-    public UiFeedbackTicketBuilder uiElementId(String uiElementId) {
+    /**
+     *
+     * @param uiElementId
+     * @return builder
+     */
+    public UiFeedbackTicketBuilder uiElementId(final String uiElementId) {
         this.uiElementId = uiElementId;
         return this;
     }
 
-    public UiFeedbackTicketBuilder usabilityScore(int usabilityScore) {
+    /**
+     *
+     * @param usabilityScore
+     * @return builder
+     */
+    public UiFeedbackTicketBuilder usabilityScore(final int usabilityScore) {
         this.usabilityScore = usabilityScore;
+        return this;
+    }
+
+    /**
+     *
+     * @param businessValue
+     * @return builder
+     */
+    public UiFeedbackTicketBuilder businessValue(final Impact businessValue) {
+        this.businessValue = businessValue;
         return this;
     }
 }
